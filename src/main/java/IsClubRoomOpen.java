@@ -12,6 +12,7 @@ import java.time.Instant;
 
 public class IsClubRoomOpen implements EventListener {
     private static final long CLUB_ROOM_CHANNEL_ID = 1019242278100930702L;
+    private static long TRACKING_MESSAGE_ID = Long.MIN_VALUE;
 
     private static JDA jda;
 
@@ -23,11 +24,14 @@ public class IsClubRoomOpen implements EventListener {
 
         // optionally block until JDA is ready
         jda.awaitReady();
+
+        setUpdateMessageTo("The club room is closed");
     }
 
-    private void setUpdateMessageTo(String string) {
+    private static void setUpdateMessageTo(String string) {
         MessageChannelUnion clubRoomChannel = jda.getChannelById(MessageChannelUnion.class, CLUB_ROOM_CHANNEL_ID);
         Message message = clubRoomChannel.getHistory().getMessageById(clubRoomChannel.asTextChannel().getLatestMessageId());
+        TRACKING_MESSAGE_ID = message.getIdLong();
 
         if (message.getMember().getIdLong() == jda.getSelfUser().getIdLong()) {
             message.editMessage(string);
@@ -40,7 +44,7 @@ public class IsClubRoomOpen implements EventListener {
     public void onEvent(GenericEvent event) {
         if (event instanceof MessageReactionAddEvent) {
             GenericMessageReactionEvent messageReactionEvent = (GenericMessageReactionEvent) event;
-            if (messageReactionEvent.getChannel().getIdLong() == CLUB_ROOM_CHANNEL_ID &&
+            if (messageReactionEvent.getMessageIdLong() == TRACKING_MESSAGE_ID &&
                     messageReactionEvent.getMember().getRoles().stream().filter(role -> role.getName().equals("Officer")).findFirst().orElse(null) != null) {
                 setUpdateMessageTo("The club room is **open!** Last updated by " + ((MessageReactionAddEvent) event).getUser().getName() + " at <" + Instant.now().getEpochSecond() + ">");
             }
@@ -48,7 +52,7 @@ public class IsClubRoomOpen implements EventListener {
 
         if (event instanceof MessageReactionRemoveEvent) {
             MessageReactionRemoveEvent messageReactionRemoveEvent = (MessageReactionRemoveEvent) event;
-            if (messageReactionRemoveEvent.getChannel().getIdLong() == CLUB_ROOM_CHANNEL_ID &&
+            if (messageReactionRemoveEvent.getMessageIdLong() == TRACKING_MESSAGE_ID &&
                     messageReactionRemoveEvent.getMember().getRoles().stream().filter(role -> role.getName().equals("Officer")).findFirst().orElse(null) != null) {
                 setUpdateMessageTo("The club room is closed");
             }
