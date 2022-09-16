@@ -35,6 +35,7 @@ public class IsClubRoomOpen implements EventListener {
 
         if (message.getMember().getIdLong() == jda.getSelfUser().getIdLong()) {
             message.editMessage(string);
+            return;
         }
 
         clubRoomChannel.sendMessage(string);
